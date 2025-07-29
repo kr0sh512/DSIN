@@ -3,3 +3,9 @@ base_df.csv
 credentials.json
 my_data.csv
 .vscode/
+*.log
+*.bak
+*.tmp
+*.pdf
+*.xlsx
+.env

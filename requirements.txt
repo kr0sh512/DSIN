@@ -4,3 +4,4 @@ gspread
 gspread-formatting
 google-api-python-client
 oauth2client
+python-dotenv
