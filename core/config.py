@@ -11,8 +11,10 @@ class Config:
     GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH")
 
     # Таблицы
-    SPREADSHEET_ID_VMK = os.getenv("SPREADSHEET_ID_VMK")
-    FOLDER_ID_OPK = os.getenv("FOLDER_ID_OPK")
+    BASE_DSIN_CMC = os.getenv("BASE_DSIN_CMC")
+    OPK_FOLDER_ID = os.getenv("OPK_FOLDER_ID")
+    SPREADSHEET_ID_COURSE_HEADS = os.getenv("SPREADSHEET_ID_COURSE_HEADS")
+    FORM_RESPONSES_ID = os.getenv("FORM_RESPONSES_ID")
 
     # Email
     EMAIL_ADDRESS = os.getenv("EMAIL_EMAIL")

@@ -1,104 +1,54 @@
-# Подключение необходимого
-
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from datetime import datetime
-import gspread
 import pandas as pd
-import re
-
-SERVICE_ACCOUNT_FILE = "credentials.json"
-
-credentials = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE,
-    scopes=[
-        "https://www.googleapis.com/auth/drive",
-        "https://www.googleapis.com/auth/documents",
-    ],
-)
-
-# Создание таблицы из базы
-
-gc = gspread.authorize(credentials)
-
-ws_bdns = gc.open_by_key("1Cqa_CERAIpnf3jCPoczB498na8drEMZpDAlUrz9_1cU")  # БДНС ВМК
-data1 = pd.DataFrame(ws_bdns.get_worksheet(0).get_all_records())  # Бюджет ЧП
-data2 = pd.DataFrame(ws_bdns.get_worksheet(1).get_all_records())  # Контракт ЧП
-data_bdns = pd.concat([data1, data2], ignore_index=True)  # объединение листов
+from core.auth import GoogleAuth
+from core.sheet_tools import SheetWrapper
+from core.config import Config
+from datetime import datetime
 
 
-data_bdns = data_bdns[["Студенческий", "Курс", "Срок действия", "Статус"]]
-data_bdns = data_bdns.rename(
-    columns={
+def run():
+    """Точка входа для CLI"""
+    auth = GoogleAuth()
+    drive = auth.get_drive_service()
+
+    # 1. Чтение базы ВМК
+    sheet_bdns = auth.get_gspread_client().open_by_key(Config.SPREADSHEET_ID_VMK)
+    data_budg = pd.DataFrame(sheet_bdns.get_worksheet(0).get_all_records())
+    data_cont = pd.DataFrame(sheet_bdns.get_worksheet(1).get_all_records())
+    data_bdns = pd.concat([data_budg, data_cont], ignore_index=True)
+
+    data_bdns = data_bdns[["Студенческий", "Курс", "Срок действия", "Статус"]]
+    data_bdns = data_bdns.rename(columns={
         "Студенческий": "Номер студенческого",
         "Срок действия": "Истечение документов",
+    })
+    data_bdns["Статус"] = data_bdns["Статус"].replace(
+        ["", "Ок"], ["В обработке", "Все в порядке"]
+    )
+
+    # 2. Чтение ответов на форму
+    sheet_answers = SheetWrapper(Config.FORM_RESPONSES_ID)
+    df_form = sheet_answers.get_dataframe()
+    df_form = df_form[df_form["Номер студенческого билета"] != ""]
+    df_form = df_form[~df_form["Номер студенческого билета"].isin(data_bdns["Номер студенческого"])]
+    df_form = df_form[["Номер студенческого билета", "Курс", "Статус"]]
+    df_form = df_form.rename(columns={"Номер студенческого билета": "Номер студенческого"})
+    df_form["Статус"] = df_form["Статус"].replace(
+        ["Внести", "Продлить", "", "Ошибка"], ["В обработке"] * 4
+    )
+
+    # 3. Объединение
+    final_df = pd.concat([data_bdns, df_form], ignore_index=True)
+
+    # 4. Создание новой таблицы
+    file_metadata = {
+        "name": f"Объединённая база {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        "mimeType": "application/vnd.google-apps.spreadsheet",
+        "parents": [Config.OPK_FOLDER_ID]
     }
-)
-data_bdns["Статус"] = data_bdns["Статус"].replace(
-    ["", "Ок"], ["В обработке", "Все в порядке"]
-)
 
-# Дополнение таблицы формой ответов
+    new_sheet = drive.files().create(body=file_metadata, fields="id").execute()
+    new_sheet_id = new_sheet["id"]
 
-ws_ans = gc.open_by_key(
-    "1fZhfUDWSGGr6uHQVdMpA1O2KNX32uXpKe8hMMNkoeMM"
-)  # Ответы на форму
-data = pd.DataFrame(ws_ans.get_worksheet(0).get_all_records())
+    SheetWrapper(new_sheet_id).update_from_dataframe(final_df)
 
-data = data[
-    data["Номер студенческого билета"] != ""
-]  # оставляем лишь тех, у кого есть номер студака
-
-list_stud = list(data_bdns["Номер студенческого"])
-
-data = data[
-    ~data["Номер студенческого билета"].isin(list_stud)
-]  # Этих людей ещё не внесли в базу
-
-data = data[["Номер студенческого билета", "Курс", "Статус"]]
-data = data.rename(columns={"Номер студенческого билета": "Номер студенческого"})
-data["Статус"] = data["Статус"].replace(
-    ["Внести", "Продлить", "", "Ошибка"],
-    ["В обработке", "В обработке", "В обработке", "В обработке"],
-)
-
-# Объединение датафреймов
-
-data_bdns = pd.concat([data_bdns, data], ignore_index=True).fillna("В обработке")
-
-
-# Преобразование "Номер студенческого" в int с заменой на стандартное значение в случае неудачи
-def safe_cast(val, to_type, default=0):
-    try:
-        return to_type(val)
-    except (ValueError, TypeError):
-        print(f"Не удалось преобразовать {val} в {to_type}")
-        return default
-
-
-data_bdns["Номер студенческого"] = data_bdns["Номер студенческого"].map(
-    lambda x: safe_cast(x, int)
-)
-data_bdns = data_bdns.sort_values(by=["Номер студенческого"])
-
-# Проверка истекания даты
-
-search = lambda x: (
-    datetime.strptime(x, "%d.%m.%Y") <= datetime.today()
-    if re.search(r"\d{2}.\d{2}.\d{4}", x)
-    else False
-)
-data_bdns["tmp"] = data_bdns["Истечение документов"].map(
-    search
-)  # создаём вспомогательный столбец для проверки истечения даты
-
-data_bdns["Статус"][data_bdns["tmp"]] = "Истек срок действия документов"
-del data_bdns["tmp"]
-
-# Загрузка файла на диск
-
-sh = gc.open_by_key(
-    "1XYnZHF1nyA4RANVcNYgn1AxKudt0xC8C-XytDrAf8ck"
-)  # id итоговой таблицы
-worksheet = sh.get_worksheet(0)
-worksheet.update([data_bdns.columns.values.tolist()] + data_bdns.values.tolist())
+    print(f"Готово! Создана таблица: https://docs.google.com/spreadsheets/d/{new_sheet_id}")
