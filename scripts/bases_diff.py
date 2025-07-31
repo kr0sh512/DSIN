@@ -118,14 +118,14 @@ def create_report(output: list[str], folder_id: str, title: str = "Отчет о
 def run():
     auth = GoogleAuth()
 
-    vmk_sheet = SheetWrapper(Config.SPREADSHEET_ID_VMK)
-    opk_sheet_id = find_opk_sheet_id(auth, Config.FOLDER_ID_OPK)
+    vmk_sheet = SheetWrapper(Config.BASE_DSIN_CMC)
+    opk_sheet_id = find_opk_sheet_id(auth, Config.OPK_FOLDER_ID)
     opk_sheet = SheetWrapper(opk_sheet_id)
 
     df_vmk = vmk_sheet.get_dataframe()
     df_opk = opk_sheet.get_dataframe()
 
     output = compare_data(df_opk, df_vmk)
-    report_url = create_report(output, Config.FOLDER_ID_OPK)
+    report_url = create_report(output, Config.OPK_FOLDER_ID)
 
     print(f"Отчет создан: {report_url}")

@@ -16,7 +16,7 @@ def load_emails(sheet: SheetWrapper, column_name: str) -> List[Tuple[int, str]]:
 
 def send_emails(email_data: List[Tuple[int, str]], subject: str, body: str,
                 sent_emails_path: str, invalid_rows_path: str):
-    yag = yagmail.SMTP(Config.EMAIL_EMAIL, Config.EMAIL_KEY, host=Config.EMAIL_HOST, port=Config.EMAIL_PORT)
+    yag = yagmail.SMTP(Config.EMAIL_ADDRESS, Config.EMAIL_KEY, host=Config.EMAIL_HOST, port=Config.EMAIL_PORT)
     sent_emails = []
     invalid_rows = []
 
@@ -44,7 +44,7 @@ def run():
     body = template.get("body", "")
 
     # Загрузка email-колонки из Google Sheets
-    sheet = SheetWrapper(Config.SPREADSHEET_ID_VMK)
+    sheet = SheetWrapper(Config.BASE_DSIN_CMC)
     email_column = "Почта"  # настрой по нужному заголовку
     emails = load_emails(sheet, email_column)
 

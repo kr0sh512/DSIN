@@ -6,3 +6,5 @@ oauth2client
 google-api-python-client
 pygsheets
 yagmail
+pyTelegramBotAPI
+schedule

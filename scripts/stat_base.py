@@ -11,7 +11,7 @@ def run():
     drive = auth.get_drive_service()
 
     # 1. Чтение базы ВМК
-    sheet_bdns = auth.get_gspread_client().open_by_key(Config.SPREADSHEET_ID_VMK)
+    sheet_bdns = auth.get_gspread_client().open_by_key(Config.BASE_DSIN_CMC)
     data_budg = pd.DataFrame(sheet_bdns.get_worksheet(0).get_all_records())
     data_cont = pd.DataFrame(sheet_bdns.get_worksheet(1).get_all_records())
     data_bdns = pd.concat([data_budg, data_cont], ignore_index=True)
