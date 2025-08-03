@@ -4,4 +4,6 @@ gspread
 gspread-formatting
 google-api-python-client
 oauth2client
-black
+flake8
+autopep8
+sphinx
