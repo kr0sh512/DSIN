@@ -1,4 +1,8 @@
 # __________ #
+from datetime import datetime
+from oauth2client.service_account import ServiceAccountCredentials
+import apiclient
+import httplib2
 import pygsheets
 import pandas as pd
 
@@ -11,9 +15,6 @@ credentials = service_account.Credentials.from_service_account_file(
 )
 drive_service = build("drive", "v3", credentials)
 
-import httplib2
-import apiclient
-from oauth2client.service_account import ServiceAccountCredentials
 
 CREDENTIALS_FILE = "credentials.json"  # имя файла с закрытым ключом
 credentials = ServiceAccountCredentials.from_json_keyfile_name(
@@ -93,11 +94,13 @@ df = pd.concat(
     ]
 )
 
-# Первоначальная подготовка данных: отсеивание отчисленных, сортировка, перестановка столбцов, создание столбца для профсоюзного билета
+# Первоначальная подготовка данных: отсеивание отчисленных, сортировка,
+# перестановка столбцов, создание столбца для профсоюзного билета
 df2 = df.loc[df["Статус"] != "отчислен"]
 df2 = df2.sort_values(["Фамилия"]).reset_index(drop=True)
 df2_final = df2.iloc[:, [0, 1, 2, 4, 5, 6]]
-df2_final = df2_final[["Фамилия", "Имя", "Отчество", "Курс", "Статус", "Студенческий"]]
+df2_final = df2_final[["Фамилия", "Имя",
+                       "Отчество", "Курс", "Статус", "Студенческий"]]
 df2_final["Номер проф. билета"] = ""
 
 # Первый этап обработки данных из таблиц начальников курса завершён
@@ -139,15 +142,12 @@ indexes = range(1, len(final_df) + 1)
 final_df.insert(loc=0, column="X", value=indexes)
 final_df["X"] = final_df["X"].astype(str)
 
-# Второй этап обработки данных завершён, создаём промежуточный CSV-файл с данными (Без промежуточного файла возникает ошибка)
+# Второй этап обработки данных завершён, создаём промежуточный CSV-файл с
+# данными (Без промежуточного файла возникает ошибка)
 csv_data = final_df.to_csv(r" my_data.csv", index=False)
 
 # ------------------- Работа с гугл-документом -------------------------------------#
 
-import pandas as pd
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from datetime import datetime
 
 # Получение текущей даты
 current_date = datetime.now().date()
@@ -189,10 +189,11 @@ start_text_to_insert = f"""
 Список студентов, рекомендованных для продления в БДНС факультета ВМК МГУ.\n
 {'Осенний' if current_date.month in [1, 8, 9, 10, 11, 12] else 'Весенний'} семестр {current_date.year} г.\n """
 # Текст для подписи (нижнего колонтитула)
-footer_text = f"""Ответственный за ведение БДНС 
+footer_text = f"""Ответственный за ведение БДНС
 ф-та ВМК МГУ  				       ___________________ Гудов Д. О."""
 
-# Считывание файла с данными в датафрейм, приведение всех данных в строковый тип
+# Считывание файла с данными в датафрейм, приведение всех данных в
+# строковый тип
 df = pd.read_csv(" my_data.csv")
 df["X"] = df["X"].astype(str)
 df.rename(columns={"X": "\t"}, inplace=True)
@@ -200,7 +201,8 @@ for i in df.columns:
     df[i] = df[i].astype(str)
 df.fillna(" \t  ", inplace=True)
 
-# Вставка первоначального текста и первых 20 строк таблицы + устанавливаем размер текста и ширину столбцов
+# Вставка первоначального текста и первых 20 строк таблицы + устанавливаем
+# размер текста и ширину столбцов
 df_temp = df[:20]
 x, y = df_temp.shape
 start_idx = len(start_text_to_insert)
@@ -311,7 +313,8 @@ requests.insert(
                 "endIndex": last_ind,  # Конечный индекс текста
             },
             "textStyle": {
-                "fontSize": {"magnitude": 10, "unit": "PT"}  # Размер шрифта в пунктах
+                # Размер шрифта в пунктах
+                "fontSize": {"magnitude": 10, "unit": "PT"}
             },
             "fields": "*",
         }
@@ -513,7 +516,8 @@ if begin < strs:
         )
         # Вставка разрыва страницы перед финальным текстом
         requests.insert(
-            put_index + 1, {"insertPageBreak": {"location": {"index": ind - 1}}}
+            put_index +
+            1, {"insertPageBreak": {"location": {"index": ind - 1}}}
         )
     # Донастройка индексов для вставки текста после таблицы
     put_index += 1
@@ -523,7 +527,7 @@ if begin < strs:
 end_text_to_insert = f"""
 Список утверждён решением студенческой комиссии профкома ф-та ВМК МГУ от «{current_date.strftime("%d.%m.%y")} г.»
 Подтверждаем, что все вышеуказанные студенты обучаются по дневной очной форме обучения за счет средств федерального бюджета РФ.\n
-Декан ф-та ВМК МГУ  			       ___________________ Соколов И. А. 
+Декан ф-та ВМК МГУ  			       ___________________ Соколов И. А.
 
 
 							М.П.
@@ -537,11 +541,11 @@ end_text_to_insert = f"""
 
 							М.П.
 
-Председатель студенческой комиссии 
+Председатель студенческой комиссии
 ф-та ВМК МГУ 				       ___________________ Худяков Д. В.
 
 
-Ответственный за ведение БДНС 
+Ответственный за ведение БДНС
 ф-та ВМК МГУ  				       ___________________ Гудов Д. О.
 """
 

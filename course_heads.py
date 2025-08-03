@@ -11,7 +11,6 @@ def design(worksheet, rows_num):
     worksheet.update_cell(1, 7, 'Статус')
     worksheet.update_cell(1, 8, 'Комментарий')
 
-
     set_column_width(worksheet, 'A:G', 120)
 
     # Добавление столбца с выпадающими списками
@@ -100,34 +99,37 @@ def design(worksheet, rows_num):
         "1:1", {
             "horizontalAlignment": "CENTER",
             "textFormat": {
-            "fontSize": 10,
-            "bold": True
+                "fontSize": 10,
+                "bold": True
             }
         })
     worksheet.format(
         "A2:H100", {
             "horizontalAlignment": "CENTER",
             "textFormat": {
-            "fontSize": 10
+                "fontSize": 10
             }
-    })
-
+        })
 
 
 # Аутентификация
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-credentials = service_account.Credentials.from_service_account_file('credentials.json')
+scope = ['https://spreadsheets.google.com/feeds',
+         'https://www.googleapis.com/auth/drive']
+credentials = service_account.Credentials.from_service_account_file(
+    'credentials.json')
 drive_service = build('drive', 'v3', credentials=credentials)
-credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+credentials = ServiceAccountCredentials.from_json_keyfile_name(
+    'credentials.json', scope)
 client = gspread.authorize(credentials)
 
 
 # Загрузка нашей базы
 table = client.open_by_key('19DuW3CRvYameij1eFNCyyijRyC9O7HtFvNjgbazg_zk')
-df = [pd.DataFrame()] * 3 
+df = [pd.DataFrame()] * 3
 for i in range(3):
     sheet = table.get_worksheet(i)
-    df[i] = (pd.DataFrame(sheet.get_all_records()))[['Фамилия', 'Имя', 'Отчество', 'Направление', 'Курс', 'Студенческий']]
+    df[i] = (pd.DataFrame(sheet.get_all_records()))[
+        ['Фамилия', 'Имя', 'Отчество', 'Направление', 'Курс', 'Студенческий']]
 
 
 # Создание папки, где будут лежать 6 таблиц
@@ -137,7 +139,8 @@ folder_metadata = {
     'parents': [parent_folder_id],
     'mimeType': 'application/vnd.google-apps.folder'
 }
-folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
+folder = drive_service.files().create(
+    body=folder_metadata, fields='id').execute()
 
 
 # Создание таблиц бакалавриата с доступом редактора для всех
@@ -145,29 +148,34 @@ sheet_names = ['Бюджет ЧП', 'Контракт ЧП']
 for i in range(4):
     table = client.create(f'{i + 1} курс', folder_id=folder['id'])
     for j in range(2):
-        worksheet = table.add_worksheet(title = sheet_names[j], rows = 100, cols = 10)
+        worksheet = table.add_worksheet(
+            title=sheet_names[j], rows=100, cols=10)
         tmp_df = df[j]
-        tmp_df = tmp_df[((tmp_df['Курс'] == (i + 1)) | (tmp_df['Курс'] == f'{i + 1}(академ)')) & (tmp_df['Направление'] == 'б')]
+        tmp_df = tmp_df[((tmp_df['Курс'] == (i + 1)) | (tmp_df['Курс']
+                         == f'{i + 1}(академ)')) & (tmp_df['Направление'] == 'б')]
         rows_num = len(tmp_df)
-        worksheet.update([tmp_df.columns.values.tolist()] + tmp_df.values.tolist())
+        worksheet.update([tmp_df.columns.values.tolist()] +
+                         tmp_df.values.tolist())
         design(worksheet, rows_num)
 
     table.del_worksheet(table.sheet1)
-    table.share(None, perm_type='anyone', role='writer') 
+    table.share(None, perm_type='anyone', role='writer')
     print(f'Таблица {i + 1} курса бакалавриата создана')
 
 # Аналогично для магистратуры
 for i in range(2):
     table = client.create(f'{i + 5} курс', folder_id=folder['id'])
     for j in range(2):
-        worksheet = table.add_worksheet(title = sheet_names[j], rows = 100, cols = 10)
+        worksheet = table.add_worksheet(
+            title=sheet_names[j], rows=100, cols=10)
         tmp_df = df[j]
-        tmp_df = tmp_df[((tmp_df['Курс'] == (i + 1)) | (tmp_df['Курс'] == f'{i + 1}(академ)')) & (tmp_df['Направление'] == 'м')]
+        tmp_df = tmp_df[((tmp_df['Курс'] == (i + 1)) | (tmp_df['Курс']
+                         == f'{i + 1}(академ)')) & (tmp_df['Направление'] == 'м')]
         rows_num = len(tmp_df)
-        worksheet.update([tmp_df.columns.values.tolist()] + tmp_df.values.tolist())
+        worksheet.update([tmp_df.columns.values.tolist()] +
+                         tmp_df.values.tolist())
         design(worksheet, rows_num)
 
     table.del_worksheet(table.sheet1)
-    table.share(None, perm_type='anyone', role='writer') 
+    table.share(None, perm_type='anyone', role='writer')
     print(f'Таблица {i + 1} курса магистратуры создана')
-

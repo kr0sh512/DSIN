@@ -1,4 +1,7 @@
 # __________ #
+from oauth2client.service_account import ServiceAccountCredentials
+import apiclient
+import httplib2
 import os
 import sys
 
@@ -19,9 +22,6 @@ credentials = service_account.Credentials.from_service_account_file(
 )
 drive_service = build("drive", "v3", credentials)
 
-import httplib2
-import apiclient
-from oauth2client.service_account import ServiceAccountCredentials
 
 CREDENTIALS_FILE = "credentials.json"  # имя файла с закрытым ключом
 credentials = ServiceAccountCredentials.from_json_keyfile_name(
@@ -53,9 +53,11 @@ scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive",
 ]
-credentials = service_account.Credentials.from_service_account_file(CREDENTIALS_FILE)
+credentials = service_account.Credentials.from_service_account_file(
+    CREDENTIALS_FILE)
 drive_service = build("drive", "v3", credentials=credentials)
-credentials = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
+credentials = ServiceAccountCredentials.from_json_keyfile_name(
+    CREDENTIALS_FILE, scope)
 client = gspread.authorize(credentials)
 
 
@@ -146,7 +148,8 @@ df = df_base.get_as_df()
 # Отсеиваем только нужный период
 df = df.loc[df["База данных"] != "Ок"]
 
-# Считали данные таблицы в датафрейм, вытаскиваем только нужные нам (продление), сортируем
+# Считали данные таблицы в датафрейм, вытаскиваем только нужные нам
+# (продление), сортируем
 df2 = df.loc[df["Статус"] == "Продлить"]
 
 # Если людей на продление нет, завершаем работу
@@ -258,7 +261,8 @@ sub_df = new_df.copy()
 x, y = sub_df.shape
 for i in range(0, int(x)):
     sub_df.iat[i, 0] = (
-        str(sub_df.iat[i, 0]) + str(sub_df.iat[i, 1])[0] + str(sub_df.iat[i, 2])[0]
+        str(sub_df.iat[i, 0]) + str(sub_df.iat[i, 1])[0] +
+        str(sub_df.iat[i, 2])[0]
     )
 
 # Переименование столбцов и подготовка записи датафрейма в CSV-файл
@@ -338,7 +342,7 @@ def get_file_id_from_url(file_url):
     """Получает идентификатор файла из ссылки на файл Google Диска."""
     # Ссылка формата https://drive.google.com/open?id=++++++++++++++++++++++
     pos = file_url.rfind("id=")  # находит последнее вхождение 'id='
-    return file_url[pos + len("id=") :]
+    return file_url[pos + len("id="):]
 
 
 def rename_file(file_id, new_filename, service):
@@ -382,7 +386,8 @@ for i in range(0, int(x)):
 # Оставим только нужную информацию для документа "Справки"
 final_sub_df = final_sub_df.iloc[:, [0, 1, 2, 3]]
 
-# Второй этап обработки данных завершён, создаём промежуточный CSV-файл с данными (Без промежуточного файла возникает ошибка)
+# Второй этап обработки данных завершён, создаём промежуточный CSV-файл с
+# данными (Без промежуточного файла возникает ошибка)
 csv_data = final_sub_df.to_csv(inter_file, index=False)
 
 # ------------------------------------------------------------
@@ -410,9 +415,6 @@ final_df = final_df[
 
 # ------------------- Работа с гугл-документом -------------------------------------#
 
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from datetime import datetime
 
 # Получение текущей даты
 current_date = datetime.now().date()
@@ -455,7 +457,7 @@ start_text_to_insert = f"""
 Список студентов, рекомендованных для продления в БДНС факультета ВМК МГУ.\n
 {'Осенний' if current_date.month in [1, 8, 9, 10, 11, 12] else 'Весенний'} семестр {current_date.year} г.\n """
 # Текст для подписи (нижнего колонтитула)
-footer_text = f"""Ответственный за ведение БДНС 
+footer_text = f"""Ответственный за ведение БДНС
 ф-та ВМК МГУ  				       ___________________ Гудов Д. О."""
 
 # Переименование переменной для удобства и замена названия столбцов на нужные
@@ -464,10 +466,14 @@ df.rename(columns={"X": "\t"}, inplace=True)
 df.rename(
     columns={"Номер студенческого билета": "№ студенческого билета"}, inplace=True
 )
-df.rename(columns={"Номер профсоюзного билета": "№ профсоюзного билета"}, inplace=True)
+df.rename(
+    columns={
+        "Номер профсоюзного билета": "№ профсоюзного билета"},
+    inplace=True)
 
 
-# Вставка первоначального текста и первых 20 строк таблицы + устанавливаем размер текста и ширину столбцов
+# Вставка первоначального текста и первых 20 строк таблицы + устанавливаем
+# размер текста и ширину столбцов
 df_temp = df[:20]
 x, y = df_temp.shape
 start_idx = len(start_text_to_insert)
@@ -578,7 +584,8 @@ requests.insert(
                 "endIndex": last_ind,  # Конечный индекс текста
             },
             "textStyle": {
-                "fontSize": {"magnitude": 10, "unit": "PT"}  # Размер шрифта в пунктах
+                # Размер шрифта в пунктах
+                "fontSize": {"magnitude": 10, "unit": "PT"}
             },
             "fields": "*",
         }
@@ -780,7 +787,8 @@ if begin < strs:
         )
         # Вставка разрыва страницы перед финальным текстом
         requests.insert(
-            put_index + 1, {"insertPageBreak": {"location": {"index": ind - 1}}}
+            put_index +
+            1, {"insertPageBreak": {"location": {"index": ind - 1}}}
         )
     # Донастройка индексов для вставки текста после таблицы
     put_index += 1
@@ -789,7 +797,7 @@ if begin < strs:
 # Текст для вставки в конец документа
 end_text_to_insert = f"""Список утверждён решением студенческой комиссии профкома ф-та ВМК МГУ от «{current_date.strftime("%d.%m.%y")} г.»\n
 Подтверждаем, что все вышеуказанные студенты обучаются по дневной очной форме обучения за счет средств федерального бюджета РФ.\n
-Декан ф-та ВМК МГУ  			       ___________________ Соколов И. А. 
+Декан ф-та ВМК МГУ  			       ___________________ Соколов И. А.
 
 
 							М.П.
@@ -803,11 +811,11 @@ end_text_to_insert = f"""Список утверждён решением сту
 
 							М.П.
 
-Председатель студенческой комиссии 
+Председатель студенческой комиссии
 ф-та ВМК МГУ 				       ___________________ Беппиев Г. И.
 
 
-Ответственный за ведение БДНС 
+Ответственный за ведение БДНС
 ф-та ВМК МГУ  				       ___________________ Гудов Д. О.
 """
 
@@ -832,9 +840,6 @@ docs_service.documents().batchUpdate(
 # Работа с документом со справками
 
 # ------------------- Работа с гугл-документом -------------------------------------#
-import pandas as pd
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
 
 # Аутентификация с использованием учетных данных службы
 credentials = service_account.Credentials.from_service_account_file(
@@ -884,7 +889,8 @@ text_to_insert = f"""
 Факультет ВМК
  "{current_date.day}" {months[current_date.month - 1]} {current_date.year}г.\n """
 
-# Считывание файла с данными в датафрейм, приведение всех данных в строковый тип
+# Считывание файла с данными в датафрейм, приведение всех данных в
+# строковый тип
 df = pd.read_csv(inter_file)
 os.remove(inter_file)
 df.fillna("   ", inplace=True)
@@ -908,14 +914,16 @@ requests = [
     },
     {
         "updateTextStyle": {
-            "textStyle": {"fontSize": {"magnitude": 18, "unit": "PT"}},  # Размер шрифта
+            # Размер шрифта
+            "textStyle": {"fontSize": {"magnitude": 18, "unit": "PT"}},
             "fields": "fontSize",
             "range": {"startIndex": 1, "endIndex": start_idx},
         }
     },
     {
         "updateParagraphStyle": {
-            "paragraphStyle": {"alignment": "CENTER"},  # Выравнивание по центру
+            # Выравнивание по центру
+            "paragraphStyle": {"alignment": "CENTER"},
             "fields": "alignment",
             "range": {"startIndex": 1, "endIndex": start_idx + 1},
         }

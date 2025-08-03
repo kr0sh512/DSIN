@@ -143,7 +143,7 @@ data = [
     "Отчество",
     "Студ. билет",
     "Профбилет",
-    "Бюджет\контракт",
+    "Бюджет\\контракт",
     "Направление",
     "Курс",
     "Счет",
@@ -174,7 +174,8 @@ df2 = df.loc[(df["Статус"] == "Внести") & (df["База данных
 df2 = df2.sort_values(["ФИО"])
 df2_final = df2.iloc[:, [1, 3, 4, 5, 6, 7, 8, 9, 20, 22]]
 
-# Заполняем таблицу на включение данными из отсортированной таблицы со студентами
+# Заполняем таблицу на включение данными из отсортированной таблицы со
+# студентами
 i = 2
 for index, row in df2_final.iterrows():
     insert_data = row["ФИО"].split()
@@ -217,7 +218,7 @@ def get_file_id_from_url(file_url):
     """Получает идентификатор файла из ссылки на файл Google Диска."""
     # Ссылка формата https://drive.google.com/open?id=++++++++++++++++++++++
     pos = file_url.rfind("id=")  # находит последнее вхождение 'id='
-    return file_url[pos + len("id=") :]  # возвращает идентификатор файла
+    return file_url[pos + len("id="):]  # возвращает идентификатор файла
 
 
 # Функция копирования файла в папку
@@ -270,9 +271,9 @@ for index, row in df2.iterrows():
     file_id = copy_files_of_user(folder, fourth_file_url, drive_service)
     rename_file(file_id, "Подтверждающие документы.pdf", drive_service)
 
-#-----------------------------------------------------------------------------------------#
-#-----------------------------------------БАЗА БДНС---------------------------------------#
-#-----------------------------------------------------------------------------------------#
+# -----------------------------------------------------------------------------------------#
+# -----------------------------------------БАЗА БДНС---------------------------------------#
+# -----------------------------------------------------------------------------------------#
 
 
 # Функция по загрузке таблицы в dataframe
@@ -284,17 +285,20 @@ def load_sheet_to_dataframe(service):
 
     # Преобразуем данные в DataFrame
     if values:
-        df = pd.DataFrame(values[1:], columns=values[0])  # Используем первую строку как заголовок
+        # Используем первую строку как заголовок
+        df = pd.DataFrame(values[1:], columns=values[0])
     else:
         df = pd.DataFrame()  # Пустой DataFrame, если таблица пуста
 
     return df
 
 # Функция обновления таблицы по dataframe
+
+
 def update_sheet_from_dataframe(service, df):
     """Обновляем Google Таблицу на основе pandas DataFrame"""
     sheet = service.spreadsheets()
-    
+
     # Преобразуем DataFrame обратно в список списков для записи
     values = [df.columns.values.tolist()] + df.values.tolist()
 
@@ -302,7 +306,7 @@ def update_sheet_from_dataframe(service, df):
         'values': values
     }
 
-    # Обновляем Google Таблицу  
+    # Обновляем Google Таблицу
     sheet.values().update(
         spreadsheetId=BASE_ID,
         range=BASE_RANGE,
@@ -314,16 +318,19 @@ def update_sheet_from_dataframe(service, df):
 # Обновляем базу БДНС
 base_service = build('sheets', 'v4', credentials=credentials)
 base_df = load_sheet_to_dataframe(base_service)
-necessary_rows = df2.iloc[:,[0, 1, 13, 3, 4, 5, 6, 7, 8, 9, 20, 11, 12, 16, 17, 18, 19, 22]]
+necessary_rows = df2.iloc[:, [0, 1, 13, 3, 4, 5,
+                              6, 7, 8, 9, 20, 11, 12, 16, 17, 18, 19, 22]]
 # Создаем строки, которые будем вставлять
 rows_to_insert_columns = base_df.columns.tolist()
 rows_to_insert = pd.DataFrame(columns=rows_to_insert_columns)
 for i in range(necessary_rows.values.shape[0]):
     row = necessary_rows.values[i]
-    surname, name, lastname = row[1].split()[0], row[1].split()[1], row[1].split()[2]
+    surname, name, lastname = row[1].split()[0], row[1].split()[
+        1], row[1].split()[2]
     for j in range(len(rows_to_insert_columns)):
         if j == 0:
-            rows_to_insert.loc[i, rows_to_insert_columns[j]] = row[j].split()[0]
+            rows_to_insert.loc[i, rows_to_insert_columns[j]] = row[j].split()[
+                0]
         elif j == 1:
             rows_to_insert.loc[i, rows_to_insert_columns[j]] = surname
         elif j == 2:
@@ -346,11 +353,10 @@ for i in range(necessary_rows.values.shape[0]):
 
 base_df = pd.concat([base_df, rows_to_insert], ignore_index=True)
 base_df.drop_duplicates(inplace=True, ignore_index=True)
-base_df.sort_values(by=['Фамилия', 'Имя', 'Отчество'], inplace=True, ignore_index=True)
+base_df.sort_values(by=['Фамилия', 'Имя', 'Отчество'],
+                    inplace=True, ignore_index=True)
 base_df.to_csv('base_df.csv', index=False, encoding='utf-8-sig')
 update_sheet_from_dataframe(base_service, base_df)
-
-
 
 
 # -----------------------------------------------------------------------------------------#
@@ -390,7 +396,7 @@ start_text_to_insert = f"""Список студентов, рекомендов
 {'Осенний' if current_date.month in [1, 8, 9, 10, 11, 12] else 'Весенний'} семестр {current_date.year} г.\n """
 
 # Текст для подписи (нижнего колонтитула)
-footer_text = f"""Ответственный за ведение БДНС 
+footer_text = f"""Ответственный за ведение БДНС
 ф-та ВМК МГУ  				       ___________________ Гудов Д.О."""
 
 
@@ -426,7 +432,8 @@ for i in df.columns:
     df[i] = df[i].astype(str)
 print(df)
 
-# Вставка первоначального текста и первых 20 строк таблицы + устанавливаем размер текста и ширину столбцов
+# Вставка первоначального текста и первых 20 строк таблицы + устанавливаем
+# размер текста и ширину столбцов
 df_temp = df[:20]
 x, y = df_temp.shape
 start_idx = len(start_text_to_insert)
@@ -537,7 +544,8 @@ requests.insert(
                 "endIndex": last_ind,  # Конечный индекс текста
             },
             "textStyle": {
-                "fontSize": {"magnitude": 10, "unit": "PT"}  # Размер шрифта в пунктах
+                # Размер шрифта в пунктах
+                "fontSize": {"magnitude": 10, "unit": "PT"}
             },
             "fields": "*",
         }
@@ -739,7 +747,8 @@ if begin < strs:
         )
         # Вставка разрыва страницы перед финальным текстом
         requests.insert(
-            put_index + 1, {"insertPageBreak": {"location": {"index": ind - 1}}}
+            put_index +
+            1, {"insertPageBreak": {"location": {"index": ind - 1}}}
         )
     # Донастройка индексов для вставки текста после таблицы
     put_index += 1
@@ -749,7 +758,7 @@ if begin < strs:
 end_text_to_insert = f"""
 Список утверждён решением студенческой комиссии профкома ф-та ВМК МГУ от «{current_date.strftime("%d.%m.%y")} г.»
 Подтверждаем, что все вышеуказанные студенты обучаются по дневной очной форме обучения за счет средств федерального бюджета РФ.\n
-Декан ф-та ВМК МГУ  			       ___________________ Соколов И. А. 
+Декан ф-та ВМК МГУ  			       ___________________ Соколов И. А.
 
 
 							М.П.
@@ -763,11 +772,11 @@ end_text_to_insert = f"""
 
 							М.П.
 
-Председатель студенческой комиссии 
+Председатель студенческой комиссии
 ф-та ВМК МГУ 				       ___________________ Беппиев Г. И.
 
 
-Ответственный за ведение БДНС 
+Ответственный за ведение БДНС
 ф-та ВМК МГУ  				       ___________________ Гудов Д.О.
 """
 

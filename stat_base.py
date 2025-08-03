@@ -21,7 +21,8 @@ credentials = service_account.Credentials.from_service_account_file(
 
 gc = gspread.authorize(credentials)
 
-ws_bdns = gc.open_by_key("1Cqa_CERAIpnf3jCPoczB498na8drEMZpDAlUrz9_1cU")  # БДНС ВМК
+ws_bdns = gc.open_by_key(
+    "1Cqa_CERAIpnf3jCPoczB498na8drEMZpDAlUrz9_1cU")  # БДНС ВМК
 data1 = pd.DataFrame(ws_bdns.get_worksheet(0).get_all_records())  # Бюджет ЧП
 data2 = pd.DataFrame(ws_bdns.get_worksheet(1).get_all_records())  # Контракт ЧП
 data_bdns = pd.concat([data1, data2], ignore_index=True)  # объединение листов
@@ -56,7 +57,9 @@ data = data[
 ]  # Этих людей ещё не внесли в базу
 
 data = data[["Номер студенческого билета", "Курс", "Статус"]]
-data = data.rename(columns={"Номер студенческого билета": "Номер студенческого"})
+data = data.rename(
+    columns={
+        "Номер студенческого билета": "Номер студенческого"})
 data["Статус"] = data["Статус"].replace(
     ["Внести", "Продлить", "", "Ошибка"],
     ["В обработке", "В обработке", "В обработке", "В обработке"],
@@ -64,10 +67,12 @@ data["Статус"] = data["Статус"].replace(
 
 # Объединение датафреймов
 
-data_bdns = pd.concat([data_bdns, data], ignore_index=True).fillna("В обработке")
+data_bdns = pd.concat(
+    [data_bdns, data], ignore_index=True).fillna("В обработке")
 
 
-# Преобразование "Номер студенческого" в int с заменой на стандартное значение в случае неудачи
+# Преобразование "Номер студенческого" в int с заменой на стандартное
+# значение в случае неудачи
 def safe_cast(val, to_type, default=0):
     try:
         return to_type(val)
@@ -83,11 +88,14 @@ data_bdns = data_bdns.sort_values(by=["Номер студенческого"])
 
 # Проверка истекания даты
 
-search = lambda x: (
+
+def search(x): return (
     datetime.strptime(x, "%d.%m.%Y") <= datetime.today()
     if re.search(r"\d{2}.\d{2}.\d{4}", x)
     else False
 )
+
+
 data_bdns["tmp"] = data_bdns["Истечение документов"].map(
     search
 )  # создаём вспомогательный столбец для проверки истечения даты
@@ -101,4 +109,5 @@ sh = gc.open_by_key(
     "1XYnZHF1nyA4RANVcNYgn1AxKudt0xC8C-XytDrAf8ck"
 )  # id итоговой таблицы
 worksheet = sh.get_worksheet(0)
-worksheet.update([data_bdns.columns.values.tolist()] + data_bdns.values.tolist())
+worksheet.update([data_bdns.columns.values.tolist()] +
+                 data_bdns.values.tolist())

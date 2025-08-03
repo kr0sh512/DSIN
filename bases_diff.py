@@ -47,10 +47,12 @@ class DatabaseComparator:
                 "https://www.googleapis.com/auth/drive",
             ],
         )
-        self.drive_service = build("drive", "v3", credentials=self.doc_credentials)
+        self.drive_service = build(
+            "drive", "v3", credentials=self.doc_credentials)
 
     def find_opk_sheet_id(self, sheet_name):
-        query = f"name = '{sheet_name}' and mimeType = 'application/vnd.google-apps.spreadsheet' and '{self.folder_id}' in parents"
+        query = f"name = '{sheet_name}' and mimeType = 'application/vnd.google-apps.spreadsheet' and '{
+            self.folder_id}' in parents"
         response = (
             self.drive_service.files()
             .list(q=query, spaces="drive", fields="files(id, name)")
@@ -83,7 +85,9 @@ class DatabaseComparator:
         output = []
         if len(df_opk_selected) != len(df_vmk_selected):
             output.append(
-                f"Разное количество строк\nОПК: {len(df_opk_selected)}\nВМК: {len(df_vmk_selected)}\n\n"
+                f"Разное количество строк\nОПК: {
+                    len(df_opk_selected)}\nВМК: {
+                    len(df_vmk_selected)}\n\n"
             )
 
         mismatches = []
@@ -94,7 +98,9 @@ class DatabaseComparator:
             ]
             if vmk_rows.empty:
                 output.append(
-                    f"\nСтрока {opk_row['Фамилия']} {opk_row['Имя']} отсутствует в базе ВМК."
+                    f"\nСтрока {
+                        opk_row['Фамилия']} {
+                        opk_row['Имя']} отсутствует в базе ВМК."
                 )
                 continue
 
@@ -115,7 +121,12 @@ class DatabaseComparator:
             output.append("\n\n\nРасхождения:")
             for i, mismatch in enumerate(mismatches, start=1):
                 output.append(
-                    f"\n{i}. {mismatch['Фамилия']} {mismatch['Имя']}, Столбец '{mismatch['Столбец']}': ОПК('{mismatch['Значение ОПК']}') != ВМК('{mismatch['Значение ВМК']}')"
+                    f"\n{i}. {
+                        mismatch['Фамилия']} {
+                        mismatch['Имя']}, Столбец '{
+                        mismatch['Столбец']}': ОПК('{
+                        mismatch['Значение ОПК']}') != ВМК('{
+                        mismatch['Значение ВМК']}')"
                 )
         else:
             output.append("Все данные совпадают.")
@@ -139,8 +150,10 @@ class DatabaseComparator:
             )
 
             if "Столбец" in line:
-                start_index = line.index("Столбец") + len("Столбец ") + current_index
-                end_index = start_index + line[start_index - current_index :].index(":")
+                start_index = line.index("Столбец") + \
+                    len("Столбец ") + current_index
+                end_index = start_index + \
+                    line[start_index - current_index:].index(":")
                 requests.append(
                     {
                         "updateTextStyle": {

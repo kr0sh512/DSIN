@@ -13,7 +13,8 @@ FOLDER_ID = '1jp9bDnn225CvC250JadqWft2z4RSP11l'
 # Аутентификация с использованием учетных данных службы
 credentials = service_account.Credentials.from_service_account_file(
     SERVICE_ACCOUNT_FILE,
-    scopes=['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/documents']
+    scopes=['https://www.googleapis.com/auth/drive',
+            'https://www.googleapis.com/auth/documents']
 )
 
 # Создание экземпляра клиента для работы с API Google Drive и Google Docs
@@ -66,4 +67,6 @@ requests = [
 ]
 
 # Отправка запроса на обновление документа
-docs_service.documents().batchUpdate(documentId=new_file['id'], body={'requests': requests}).execute()
+docs_service.documents().batchUpdate(
+    documentId=new_file['id'], body={
+        'requests': requests}).execute()
