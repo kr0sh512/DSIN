@@ -1,6 +1,7 @@
 # Скрипт для сравнения таблиц от ОПК и нашей собственной
 
 import pandas as pd
+from core.utils import retry_until_success  
 from core.auth import GoogleAuth
 from core.sheet_tools import SheetWrapper
 from core.config import Config
@@ -14,7 +15,9 @@ VMK_COLUMNS = [
 
 def find_opk_sheet_id(auth: GoogleAuth, folder_id: str, sheet_name: str = "Копия базы ОПК") -> str:
     query = f"name = '{sheet_name}' and mimeType = 'application/vnd.google-apps.spreadsheet' and '{folder_id}' in parents"
-    response = auth.get_drive_service().files().list(q=query, spaces="drive", fields="files(id, name)").execute()
+    response = retry_until_success(
+        auth.get_drive_service().files().list(q=query, spaces="drive", fields="files(id, name)").execute
+    )
     files = response.get("files", [])
     if not files:
         raise FileNotFoundError(f"Таблица '{sheet_name}' не найдена в папке {folder_id}")
@@ -79,7 +82,7 @@ def create_report(output: list[str], folder_id: str, title: str = "Отчет о
     docs = auth.get_docs_service()
     drive = auth.get_drive_service()
 
-    document = docs.documents().create(body={"title": title}).execute()
+    document = retry_until_success(docs.documents().create(body={"title": title}).execute)
     document_id = document["documentId"]
 
     requests = []
@@ -110,8 +113,8 @@ def create_report(output: list[str], folder_id: str, title: str = "Отчет о
 
         current_index += len(line) + 1
 
-    docs.documents().batchUpdate(documentId=document_id, body={"requests": requests}).execute()
-    drive.files().update(fileId=document_id, addParents=folder_id).execute()
+    retry_until_success(docs.documents().batchUpdate(documentId=document_id, body={"requests": requests}).execute)
+    retry_until_success(drive.files().update(fileId=document_id, addParents=folder_id).execute)
     return f"https://docs.google.com/document/d/{document_id}"
 
 

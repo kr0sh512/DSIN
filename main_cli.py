@@ -12,6 +12,7 @@ import importlib
 import pkgutil
 import inspect
 import sys
+import traceback  # для отображения ошибок
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).parent / "scripts"
@@ -36,12 +37,12 @@ def load_and_run(module_name: str, forward_args: list[str]):
     if not hasattr(mod, "run") or not inspect.isfunction(mod.run):
         sys.exit(f"❌ В {module_name} нет функции run().")
 
-    # Если run() принимает *args — передадим остаток CLI-аргументов
     try:
         mod.run(*forward_args)
-    except TypeError:
-        # run() без параметров
-        mod.run()
+    except Exception as e:
+        print(f"❌ Ошибка при выполнении {module_name}: {e}")
+        traceback.print_exc()
+        sys.exit(1)
 
 
 def main():

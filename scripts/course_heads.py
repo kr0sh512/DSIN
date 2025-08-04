@@ -1,13 +1,14 @@
 from core.auth import GoogleAuth
 from core.config import Config
+from core.utils import retry_until_success, rollback_on_failure  # 🛡️ добавлен откат при ошибке
 from gspread_formatting import set_column_width
 import gspread
 
 
 def format_course_sheet(worksheet: gspread.Worksheet, rows_num: int):
     """Применяет форматирование: заголовки, выпадающие списки, чередование цветов."""
-    worksheet.update_cell(1, 7, 'Статус')
-    worksheet.update_cell(1, 8, 'Комментарий')
+    retry_until_success(worksheet.update_cell, 1, 7, 'Статус')
+    retry_until_success(worksheet.update_cell, 1, 8, 'Комментарий')
 
     set_column_width(worksheet, 'A:G', 120)
 
@@ -39,7 +40,7 @@ def format_course_sheet(worksheet: gspread.Worksheet, rows_num: int):
         }
     }
 
-    worksheet.spreadsheet.batch_update({"requests": [request]})
+    retry_until_success(worksheet.spreadsheet.batch_update, {"requests": [request]})
 
     # Чередование цветов
     start_row = 1
@@ -71,7 +72,7 @@ def format_course_sheet(worksheet: gspread.Worksheet, rows_num: int):
             })
 
     if requests:
-        worksheet.spreadsheet.batch_update({"requests": requests})
+        retry_until_success(worksheet.spreadsheet.batch_update, {"requests": requests})
 
 
 def run():
@@ -79,9 +80,11 @@ def run():
     auth = GoogleAuth()
     gc = auth.get_gspread_client()
 
-    spreadsheet = gc.open_by_key(Config.SPREADSHEET_ID_COURSE_HEADS)
+    spreadsheet = retry_until_success(gc.open_by_key, Config.SPREADSHEET_ID_COURSE_HEADS)
     worksheet = spreadsheet.sheet1
-    rows_num = len(worksheet.get_all_values()) - 1
+    rows_num = len(retry_until_success(worksheet.get_all_values)) - 1
 
-    format_course_sheet(worksheet, rows_num)
+    with rollback_on_failure(worksheet, description="таблица начальников курсов"):
+        format_course_sheet(worksheet, rows_num)
+
     print("Форматирование таблицы начальников курсов завершено.")
